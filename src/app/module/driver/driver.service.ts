@@ -19,6 +19,7 @@ const assignAmbulanceToDriver = async (
   const existingDriver = await prisma.driver.findUnique({
     where: {
       id: driverId,
+      
       deletedAt: null,
     },
   });
