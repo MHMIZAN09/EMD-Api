@@ -1,0 +1,20 @@
+model Driver {
+    id            String @id @default(uuid())
+    name          String
+    email         String @unique
+    phone         String @unique
+    licenseNumber String @unique
+
+    imageUrl      String?
+    imagePublicId String?
+
+    ambulanceId String?    @unique
+    ambulance   Ambulance? @relation(fields: [ambulanceId], references: [id])
+
+    deletedAt DateTime?
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+
+    @@index([email])
+    @@map("drivers")
+}
