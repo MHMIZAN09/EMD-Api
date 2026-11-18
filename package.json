@@ -5,13 +5,19 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "tsx watch src/server.ts"
+    "dev": "tsx watch src/server.ts",
+    "format:check": "npx @biomejs/biome format ./src",
+    "format:fix": "npx @biomejs/biome format --write ./src",
+    "lint:check": "npx @biomejs/biome lint ./src",
+    "lint:fix": "npx @biomejs/biome lint --write ./src"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.10.1",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/jsonwebtoken": "^9.0.10",
@@ -19,16 +25,21 @@
     "cloudinary": "^2.11.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
+    "dotenv": "^18.0.10",
     "express": "^5.3.0",
     "http-status": "^2.1.0",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.5.0",
+    "pg": "^8.23.1",
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.6.8",
     "@types/express": "^5.0.6",
     "@types/multer": "^2.3.0",
     "@types/node": "^26.6.6",
+    "@types/pg": "^8.23.1",
+    "prisma": "^7.10.1",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   }
