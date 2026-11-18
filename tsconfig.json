@@ -12,8 +12,9 @@
     "ignoreDeprecations": "5.0"
   },
   "include": [
-    "src",
-    "prisma.config.ts"
+    "src/**/*.ts",
+    "prisma.config.ts",
+    "prisma/seed.ts"
   ],
   "exclude": [
     "node_modules",
