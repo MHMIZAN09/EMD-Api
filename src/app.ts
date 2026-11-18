@@ -2,6 +2,8 @@ import express, { Application, Request, Response } from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import httpStatus from "http-status";
+import { notFound } from "./app/middleware/notFound";
+import { globalErrorHandler } from "./app/middleware/globalErrorHandler";
 
 const app: Application = express();
 
@@ -23,5 +25,8 @@ app.get("/", async (req: Request, res: Response) => {
     message: "Welcome to Emergenc Ambulance Dispatch System API",
   });
 });
+
+app.use(globalErrorHandler);
+app.use(notFound);
 
 export default app;
