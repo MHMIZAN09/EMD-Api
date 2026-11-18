@@ -31,11 +31,7 @@ export const auth = (...requiredRoles: Role[]) => {
 
     const { email, name, userId } = verifiedToken.data as JwtPayload;
 
-    if (
-      typeof userId !== "string" ||
-      typeof email !== "string" ||
-      typeof name !== "string"
-    ) {
+    if (typeof userId !== "string" || typeof email !== "string") {
       throw new AppError(
         httpStatus.UNAUTHORIZED,
         "Invalid authentication token. Please log in again.",
@@ -44,6 +40,9 @@ export const auth = (...requiredRoles: Role[]) => {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
+      omit: {
+        password: true,
+      },
     });
 
     if (!user) {
