@@ -40,4 +40,4 @@ router.get(
   dispatchController.getDispatchById,
 );
 
-export const dispatchRouter = router;
+export const dispatchRoutes = router;
