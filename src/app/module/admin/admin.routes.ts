@@ -4,6 +4,7 @@ import { auth } from "../../middleware/checkAuth";
 import { Role } from "../../../generated/prisma/enums";
 import { validateRequest } from "../../middleware/validateRequest";
 import { ambulanceValidation } from "../ambulance/ambulance.validation";
+import { hospitalValidation } from "../hospital/hospital.validation";
 
 const router = Router();
 
@@ -49,5 +50,37 @@ router.delete(
   "/ambulances/:id",
   auth(Role.ADMIN),
   adminController.deleteAmbulance,
+);
+
+//! hospital management
+router.post(
+  "/hospitals",
+  auth(Role.ADMIN),
+  validateRequest(hospitalValidation.hospitalPayloadSchema),
+  adminController.createHospital,
+);
+
+router.patch(
+  "/hospitals/:id",
+  auth(Role.ADMIN),
+  validateRequest(hospitalValidation.hospitalUpdatePayloadSchema),
+  adminController.updateHospital,
+);
+
+router.delete(
+  "/hospitals/:id",
+  auth(Role.ADMIN),
+  adminController.deleteHospital,
+);
+
+router.get("/hospitals", auth(Role.ADMIN), adminController.getAllHospitals);
+
+router.get("/hospitals/:id", auth(Role.ADMIN), adminController.getHospitalById);
+
+router.patch(
+  "/hospitals/:id/status",
+  auth(Role.ADMIN),
+  validateRequest(hospitalValidation.hospitalStausPayloadSchema),
+  adminController.hospitalStatus,
 );
 export const adminRoutes = router;

@@ -6,6 +6,7 @@ import httpStatus from "http-status";
 import { userService } from "../users/user.service";
 import { sendResponse } from "../../utils/sendResponse";
 import { ambulanceService } from "../ambulance/ambulance.service";
+import { hospitalService } from "../hospital/hospital.service";
 
 //! get all users
 const getAllUsers = catchAsync(async (req: Request, res: Response) => {
@@ -191,6 +192,144 @@ const deleteAmbulance = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+//! hospital management
+
+const createHospital = catchAsync(async (req: Request, res: Response) => {
+  const user = req.user;
+  if (user?.role !== Role.ADMIN) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You are not authorized to access this resource.",
+    );
+  }
+
+  const payload = req.body;
+
+  const hospital = await hospitalService.createHospital(payload);
+
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    success: true,
+    message: "Hospital created successfully",
+    data: hospital,
+  });
+});
+
+const updateHospital = catchAsync(async (req: Request, res: Response) => {
+  const user = req.user;
+  if (user?.role !== Role.ADMIN) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You are not authorized to access this resource.",
+    );
+  }
+
+  const hospitalId = req.params.id;
+  const payload = req.body;
+
+  const updatedHospital = await hospitalService.updateHospital(
+    hospitalId as string,
+    payload,
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Hospital updated successfully",
+    data: updatedHospital,
+  });
+});
+
+const deleteHospital = catchAsync(async (req: Request, res: Response) => {
+  const user = req.user;
+  if (user?.role !== Role.ADMIN) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You are not authorized to access this resource.",
+    );
+  }
+
+  const hospitalId = req.params.id;
+
+  const deletedHospital = await hospitalService.deleteHospital(
+    hospitalId as string,
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Hospital deleted successfully",
+    data: deletedHospital,
+  });
+});
+
+const getAllHospitals = catchAsync(async (req: Request, res: Response) => {
+  const user = req.user;
+  if (user?.role !== Role.ADMIN) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You are not authorized to access this resource.",
+    );
+  }
+
+  const hospitals = await hospitalService.getAllHospitals();
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Hospitals retrieved successfully",
+    data: hospitals,
+  });
+});
+
+const getHospitalById = catchAsync(async (req: Request, res: Response) => {
+  const user = req.user;
+  if (user?.role !== Role.ADMIN) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You are not authorized to access this resource.",
+    );
+  }
+
+  const hospitalId = req.params.id;
+
+  const hospital = await hospitalService.getHospitalByIdByAdmin(
+    hospitalId as string,
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Hospital retrieved successfully",
+    data: hospital,
+  });
+});
+
+const hospitalStatus = catchAsync(async (req: Request, res: Response) => {
+  const user = req.user;
+  if (user?.role !== Role.ADMIN) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You are not authorized to access this resource.",
+    );
+  }
+
+  const hospitalId = req.params.id;
+  const { status } = req.body;
+
+  const updatedHospital = await hospitalService.hospitalStatus(
+    hospitalId as string,
+    status,
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Hospital status updated successfully",
+    data: updatedHospital,
+  });
+});
+
 export const adminController = {
   getAllUsers,
   getUserById,
@@ -200,4 +339,11 @@ export const adminController = {
   createAmbulance,
   updateAmbulance,
   deleteAmbulance,
+
+  createHospital,
+  updateHospital,
+  deleteHospital,
+  getAllHospitals,
+  getHospitalById,
+  hospitalStatus,
 };
