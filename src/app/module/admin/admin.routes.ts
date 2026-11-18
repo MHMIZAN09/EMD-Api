@@ -5,6 +5,7 @@ import { Role } from "../../../generated/prisma/enums";
 import { validateRequest } from "../../middleware/validateRequest";
 import { ambulanceValidation } from "../ambulance/ambulance.validation";
 import { hospitalValidation } from "../hospital/hospital.validation";
+import { driverValidation } from "../driver/driver.validation";
 
 const router = Router();
 
@@ -83,4 +84,22 @@ router.patch(
   validateRequest(hospitalValidation.hospitalStausPayloadSchema),
   adminController.hospitalStatus,
 );
+
+//! driver management
+router.post(
+  "/drivers",
+  auth(Role.ADMIN),
+  validateRequest(driverValidation.driverPayloadSchema),
+  adminController.createDriver,
+);
+
+router.patch(
+  "/drivers/:id",
+  auth(Role.ADMIN),
+  validateRequest(driverValidation.driverUpdatePayloadSchema),
+  adminController.updateDriver,
+);
+
+router.delete("/drivers/:id", auth(Role.ADMIN), adminController.deleteDriver);
+
 export const adminRoutes = router;

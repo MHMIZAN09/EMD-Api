@@ -7,6 +7,7 @@ import { userService } from "../users/user.service";
 import { sendResponse } from "../../utils/sendResponse";
 import { ambulanceService } from "../ambulance/ambulance.service";
 import { hospitalService } from "../hospital/hospital.service";
+import { driverService } from "../driver/driver.service";
 
 //! get all users
 const getAllUsers = catchAsync(async (req: Request, res: Response) => {
@@ -330,6 +331,73 @@ const hospitalStatus = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const createDriver = catchAsync(async (req: Request, res: Response) => {
+  const user = req.user;
+  if (user?.role !== Role.ADMIN) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You are not authorized to access this resource.",
+    );
+  }
+
+  const payload = req.body;
+
+  const driver = await driverService.createDriver(payload);
+
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    success: true,
+    message: "Driver created successfully",
+    data: driver,
+  });
+});
+
+const updateDriver = catchAsync(async (req: Request, res: Response) => {
+  const user = req.user;
+  if (user?.role !== Role.ADMIN) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You are not authorized to access this resource.",
+    );
+  }
+
+  const driverId = req.params.id;
+  const payload = req.body;
+
+  const updatedDriver = await driverService.updateDriver(
+    driverId as string,
+    payload,
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Driver updated successfully",
+    data: updatedDriver,
+  });
+});
+
+const deleteDriver = catchAsync(async (req: Request, res: Response) => {
+  const user = req.user;
+  if (user?.role !== Role.ADMIN) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You are not authorized to access this resource.",
+    );
+  }
+
+  const driverId = req.params.id;
+
+  const deletedDriver = await driverService.deleteDriver(driverId as string);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Driver deleted successfully",
+    data: deletedDriver,
+  });
+});
+
 export const adminController = {
   getAllUsers,
   getUserById,
@@ -340,10 +408,16 @@ export const adminController = {
   updateAmbulance,
   deleteAmbulance,
 
+  //! hospital management
   createHospital,
   updateHospital,
   deleteHospital,
   getAllHospitals,
   getHospitalById,
   hospitalStatus,
+
+  //! driver management
+  createDriver,
+  updateDriver,
+  deleteDriver,
 };
