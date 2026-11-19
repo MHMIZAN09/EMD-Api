@@ -149,6 +149,36 @@ const logout = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+//* Forgot Password
+
+const forgotPassword = catchAsync(async (req: Request, res: Response) => {
+  const payload = req.body;
+
+  await authService.forgotPassword(payload);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: `Password reset link sent to your email: ${payload.email}`,
+    data: null,
+  });
+});
+
+//* Reset Password
+const resetPassword = catchAsync(async (req: Request, res: Response) => {
+  const payload = req.body;
+
+  await authService.resetPassword(payload);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message:
+      "Password changed successfully. Please login with your new password.",
+    data: null,
+  });
+});
+
 export const authController = {
   RegisterUser,
   LoginUser,
@@ -156,4 +186,6 @@ export const authController = {
   refreshToken,
   logout,
   verifyUserEmail,
+  forgotPassword,
+  resetPassword,
 };

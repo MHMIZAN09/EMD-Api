@@ -1,7 +1,9 @@
 import { prisma } from "../../lib/prisma";
 import { AppError } from "../../utils/AppError";
 import type {
+  IForgotPasswordPayload,
   IRequestUser,
+  IResetPasswordPayload,
   IUserLoginPayload,
   IUserRegisterPayload,
   IVerifyEmailPayload,
@@ -258,6 +260,14 @@ const loginUser = async (payload: IUserLoginPayload) => {
     throw new AppError(httpStatus.UNAUTHORIZED, "Invalid password");
   }
 
+  if (!user.emailVerified) {
+    await sendEmailVerificationOtp({
+      name: user.name,
+      email,
+    });
+    return { verificationRequired: true as const };
+  }
+
   //!  jwt token generation
   const jwtPayload = {
     userId: user.id,
@@ -364,6 +374,154 @@ const refreshToken = async (token: string) => {
   };
 };
 
+const forgotPassword = async (payload: IForgotPasswordPayload) => {
+  const email = normalizeEmail(payload.email);
+
+  if (!email) {
+    throw new Error("Email is required");
+  }
+
+  const isUserExist = await prisma.user.findUnique({
+    where: {
+      email,
+    },
+  });
+
+  if (!isUserExist) {
+    throw new Error("User Does Not Exist!");
+  }
+
+  if (isUserExist.status === "SUSPENDED") {
+    throw new Error("User is Suspended, please contact support");
+  }
+
+  if (!isUserExist.emailVerified) {
+    throw new Error("User Not Verified");
+  }
+
+  if (isUserExist.isDeleted) {
+    throw new Error("User is Deleted");
+  }
+
+  const otp = crypto.randomInt(100000, 1000000).toString();
+
+  if (config.node_env === "development")
+    console.log(`[dev] Forgot-password OTP for ${email}: ${otp}`);
+
+  const key = `forgot-password-otp:${isUserExist.email}`;
+
+  const expirationSeconds = 5 * 60;
+
+  await redisClient.set(key, otp, {
+    expiration: {
+      type: "EX",
+      value: expirationSeconds,
+    },
+  });
+
+  const templatePath = path.join(
+    process.cwd(),
+    "src/templates/forgot-password.ejs",
+  );
+
+  const templateData = {
+    name: isUserExist.name,
+    otp,
+    expirationMinutes: expirationSeconds / 60,
+  };
+
+  const html = await ejs.renderFile(templatePath, templateData);
+
+  await transporter.sendMail({
+    from: config.email_sender,
+    to: isUserExist.email,
+    subject: "Forgot Password",
+    // text : `Your OTP is ${otp}`
+    // html: `<h1>Your OTP is ${otp}</h1>`
+    html,
+  });
+};
+
+const resetPassword = async (payload: IResetPasswordPayload) => {
+  const email = payload.email?.trim().toLowerCase();
+  const otp = payload.otp?.trim();
+  const newPassword = payload.newPassword;
+
+  if (!email || !otp || !newPassword) {
+    throw new Error("Email, OTP and new password are required");
+  }
+
+  if (newPassword.length < 8) {
+    throw new Error("Password must be at least 8 characters");
+  }
+
+  const isUserExist = await prisma.user.findUnique({
+    where: {
+      email,
+    },
+  });
+
+  if (!isUserExist) {
+    throw new Error("User Does Not Exist!");
+  }
+
+  if (isUserExist.status === "SUSPENDED") {
+    throw new Error("User is Suspended, please contact support");
+  }
+
+  if (!isUserExist.emailVerified) {
+    throw new Error("User Not Verified");
+  }
+
+  if (isUserExist.isDeleted) {
+    throw new Error("User is Deleted");
+  }
+
+  const key = `forgot-password-otp:${isUserExist.email}`;
+
+  const redisOtp = await redisClient.get(key);
+
+  if (!redisOtp) {
+    throw new Error("Invalid OTP");
+  }
+
+  if (redisOtp !== otp) {
+    throw new Error("OTP Does Not Match");
+  }
+
+  const hashedNewPassword = await argon2.hash(newPassword);
+  await prisma.user.update({
+    where: {
+      email: isUserExist.email,
+    },
+    data: {
+      password: hashedNewPassword,
+    },
+  });
+
+  await redisClient.del([key]);
+
+  const templatePath = path.join(
+    process.cwd(),
+    "src/templates/reset-password-success.ejs",
+  );
+
+  const templateData = {
+    name: isUserExist.name,
+  };
+
+  const html = await ejs.renderFile(templatePath, templateData);
+
+  await transporter.sendMail({
+    from: config.email_sender,
+    to: isUserExist.email,
+    subject: "Password Changed",
+    // text : `Your OTP is ${otp}`
+    // html: `<h1>Your Password Is Changed</h1>`
+    html,
+  });
+};
+
 //! normalize email to lowercase and trim whitespace
 export const normalizeEmail = (email: string): string => {
   return email.trim().toLowerCase();
@@ -414,4 +572,6 @@ export const authService = {
   getMe,
   refreshToken,
   verifyUserEmail,
+  forgotPassword,
+  resetPassword,
 };
