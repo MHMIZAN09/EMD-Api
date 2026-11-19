@@ -4,6 +4,7 @@ import type {
   IRequestUser,
   IUserLoginPayload,
   IUserRegisterPayload,
+  IVerifyEmailPayload,
 } from "./auth.interface";
 import httpStatus from "http-status";
 
@@ -12,6 +13,73 @@ import { Role, UserStatus } from "../../../generated/prisma/enums";
 import { jwtUtils } from "../../utils/jwt";
 import { JwtPayload, SignOptions } from "jsonwebtoken";
 import config from "../../config";
+import crypto from "crypto";
+import ejs from "ejs";
+import { redisClient } from "../../lib/redis";
+import path from "path";
+import { transporter } from "../../lib/nodeMailer";
+
+const sendEmailVerificationOtp = async ({
+  name,
+  email,
+  password,
+  role,
+}: {
+  name: string;
+  email: string;
+  password?: string;
+  role?: Role;
+}) => {
+  const expirationSeconds = 5 * 60;
+  const otpKey = `user-registration-otp:${email}`;
+  const otpValue = crypto.randomInt(100000, 1000000).toString();
+
+  if (config.node_env === "development") {
+    console.log(`[dev] OTP ${email} : ${otpValue}`);
+  }
+
+  await redisClient.set(otpKey, otpValue, {
+    expiration: {
+      type: "EX",
+      value: expirationSeconds,
+    },
+  });
+
+  if (password && role) {
+    const userRegistrationKey = `user-registration-data:${email}`;
+    await redisClient.set(
+      userRegistrationKey,
+      JSON.stringify({ name, email, password, role }),
+      {
+        expiration: {
+          type: "EX",
+          value: expirationSeconds,
+        },
+      },
+    );
+  }
+
+  const templatePath = path.join(
+    process.cwd(),
+    "src/templates/registration-user-otp.ejs",
+  );
+
+  const templateData = {
+    name,
+    email,
+    otp: otpValue,
+    expirationMinutes: expirationSeconds / 60,
+  };
+
+  const html = await ejs.renderFile(templatePath, templateData);
+
+  await transporter.sendMail({
+    from: config.email_sender,
+    to: email,
+    subject: "Email Verification",
+    html,
+  });
+};
 
 //! register user
 const registerUser = async (payload: IUserRegisterPayload) => {
@@ -23,20 +91,140 @@ const registerUser = async (payload: IUserRegisterPayload) => {
 
   const hashedPassword = await argon2.hash(password);
 
-  const user = await prisma.user.create({
-    data: {
-      name,
-      email: normalizedEmail,
-      password: hashedPassword,
-      phone: normalizedPhone,
-      role: Role.REQUESTER,
-    },
-    omit: {
-      password: true,
-    },
+  // const user = await prisma.user.create({
+  //   data: {
+  //     name,
+  //     email: normalizedEmail,
+  //     password: hashedPassword,
+  //     phone: normalizedPhone,
+  //     role: Role.REQUESTER,
+  //   },
+  //   omit: {
+  //     password: true,
+  //   },
+  // });
+
+  // return user;
+
+  await sendEmailVerificationOtp({
+    name,
+    email: normalizedEmail,
+    password: hashedPassword,
+    role: Role.REQUESTER,
+  });
+};
+
+const verifyUserEmail = async (payload: IVerifyEmailPayload) => {
+  const otp = payload.otp;
+  const email = payload.email.trim().toLowerCase();
+
+  const isUserExist = await prisma.user.findUnique({
+    where: { email },
   });
 
-  return user;
+  if (isUserExist?.status === "SUSPENDED") {
+    throw new Error("User is Suspended, please contact support");
+  }
+
+  if (isUserExist?.emailVerified) {
+    throw new Error("Email ALready Verified");
+  }
+
+  if (isUserExist?.isDeleted) {
+    throw new Error("User is Deleted");
+  }
+
+  const otpKey = `user-registration-otp:${email}`;
+
+  const redisOtp = await redisClient.get(otpKey);
+
+  if (!redisOtp) {
+    throw new Error("Invalid OTP");
+  }
+
+  if (redisOtp !== otp) {
+    throw new Error("OTP Does Not Match");
+  }
+
+  await redisClient.del(otpKey);
+
+  const userRegistrationKey = `user-registration-data:${email}`;
+  const redisUserData = await redisClient.get(userRegistrationKey);
+  const userPayload = redisUserData ? JSON.parse(redisUserData) : null;
+
+  const verifiedUser = isUserExist
+    ? await prisma.user.update({
+        where: { id: isUserExist.id },
+        data: {
+          emailVerified: true,
+          status: UserStatus.ACTIVE,
+        },
+        omit: { password: true },
+      })
+    : userPayload
+      ? await prisma.user.create({
+          data: {
+            name: userPayload.name,
+            email: userPayload.email,
+            password: userPayload.password,
+            role: userPayload.role,
+            status: UserStatus.ACTIVE,
+            emailVerified: true,
+          },
+          omit: { password: true },
+        })
+      : null;
+
+  if (!verifiedUser) {
+    throw new Error("User registration data not found");
+  }
+
+  await redisClient.del(userRegistrationKey);
+
+  const templatePath = path.join(
+    process.cwd(),
+    "src/templates/welcome-email.ejs",
+  );
+
+  const templateData = {
+    name: verifiedUser.name,
+  };
+
+  const html = await ejs.renderFile(templatePath, templateData);
+
+  await transporter.sendMail({
+    from: config.email_sender,
+    to: email,
+    subject: "Welcome To Emergency Management System",
+    // text : `Your OTP is ${otp}`
+    // html: `<h1>Your OTP is ${otp}</h1>`
+    html,
+  });
+
+  const jwtPayload = {
+    userId: verifiedUser.id,
+    name: verifiedUser.name,
+    email: verifiedUser.email,
+    role: verifiedUser.role,
+  };
+
+  const accessToken = jwtUtils.createToken(
+    jwtPayload,
+    config.jwt_access_secret,
+    config.jwt_access_expires_in as SignOptions,
+  );
+
+  const refreshToken = jwtUtils.createToken(
+    jwtPayload,
+    config.jwt_refresh_secret,
+    config.jwt_refresh_expires_in as SignOptions,
+  );
+
+  return {
+    user: verifiedUser,
+    accessToken,
+    refreshToken,
+  };
 };
 
 //! login user
@@ -197,10 +385,26 @@ export const ensureUserExists = async (email: string) => {
   });
 
   if (user) {
-    throw new AppError(
-      httpStatus.CONFLICT,
-      "User with this email already exists",
-    );
+    if (user.status === UserStatus.SUSPENDED) {
+      throw new AppError(
+        httpStatus.FORBIDDEN,
+        "User is suspended, please contact support",
+      );
+    }
+
+    if (user.isDeleted) {
+      throw new AppError(httpStatus.FORBIDDEN, "User is deleted");
+    }
+    if (user.emailVerified) {
+      throw new AppError(httpStatus.CONFLICT, "User already exists");
+    }
+
+    await sendEmailVerificationOtp({
+      name: user.name,
+      email: user.email,
+    });
+
+    return;
   }
 };
 
@@ -209,4 +413,5 @@ export const authService = {
   loginUser,
   getMe,
   refreshToken,
+  verifyUserEmail,
 };

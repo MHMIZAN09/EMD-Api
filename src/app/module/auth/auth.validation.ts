@@ -26,7 +26,13 @@ const loginSchema = z.object({
   password: z.string("Password is required"),
 });
 
+const verifyEmailSchema = z.object({
+  email: z.email("Email is required").includes("@", "Email must be valid"),
+  otp: z.string("OTP is required").length(6, "OTP must be 6 digits"),
+});
+
 export const authValidation = {
   registerSchema,
   loginSchema,
+  verifyEmailSchema,
 };
