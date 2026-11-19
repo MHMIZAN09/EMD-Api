@@ -1,0 +1,420 @@
+{
+  "info": {
+    "_postman_id": "9edb4b9a-4a6a-4e0c-9af1-emd-api",
+    "name": "Emergency Management API",
+    "description": "Postman collection for the Emergency Ambulance Dispatch System API.\n\nBase URL: http://localhost:5000/api/v1\n\nLogin first, then run a role-based dashboard or protected request. The Login test script saves accessToken, refreshToken, and userId automatically.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000/api/v1" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "userId", "value": "" },
+    { "key": "emergencyId", "value": "" },
+    { "key": "hospitalId", "value": "" },
+    { "key": "ambulanceId", "value": "" },
+    { "key": "driverId", "value": "" },
+    { "key": "dispatchId", "value": "" },
+    { "key": "paymentId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register Requester",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/register",
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Test Requester\",\n  \"email\": \"requester@example.com\",\n  \"password\": \"Password123!\",\n  \"phone\": \"01712345678\"\n}" }
+          }
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/verify-email",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"requester@example.com\",\n  \"otp\": \"123456\"\n}" }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const json = pm.response.json();",
+                "if (json.data?.accessToken) pm.collectionVariables.set(\"accessToken\", json.data.accessToken);",
+                "if (json.data?.refreshToken) pm.collectionVariables.set(\"refreshToken\", json.data.refreshToken);",
+                "if (json.data?.user?.id) pm.collectionVariables.set(\"userId\", json.data.user.id);"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"requester@example.com\",\n  \"password\": \"Password123!\"\n}" }
+          }
+        },
+        {
+          "name": "Get Me",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/auth/me" }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/refresh-token"
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/change-password",
+            "body": { "mode": "raw", "raw": "{\n  \"oldPassword\": \"Password123!\",\n  \"newPassword\": \"NewPassword123!\",\n  \"confirmNewPassword\": \"NewPassword123!\"\n}" }
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/forgot-password",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"requester@example.com\"\n}" }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/reset-password",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"requester@example.com\",\n  \"otp\": \"123456\",\n  \"newPassword\": \"NewPassword123!\"\n}" }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": { "method": "POST", "header": [], "url": "{{baseUrl}}/auth/logout" }
+        }
+      ]
+    },
+    {
+      "name": "User",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/users/profile" }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/users/profile",
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Updated Name\",\n  \"phone\": \"01712345679\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Create Dispatcher",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/admin/dispatchers",
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Emergency Dispatcher\",\n  \"email\": \"dispatcher@example.com\",\n  \"phone\": \"01712345678\"\n}" }
+          }
+        },
+        { "name": "Get All Users", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/admin/users" } },
+        { "name": "Get User By ID", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/admin/users/{{userId}}" } },
+        {
+          "name": "Change User Status",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/admin/users/{{userId}}/status",
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"ACTIVE\"\n}" }
+          }
+        },
+        {
+          "name": "Change User Role",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/admin/users/{{userId}}/role",
+            "body": { "mode": "raw", "raw": "{\n  \"role\": \"DISPATCHER\"\n}" }
+          }
+        },
+        { "name": "Delete User", "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/admin/users/{{userId}}" } },
+        {
+          "name": "Create Ambulance",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/admin/ambulances",
+            "body": { "mode": "raw", "raw": "{\n  \"licensePlate\": \"DHA-EMD-1001\",\n  \"model\": \"Sprinter\",\n  \"manufacturer\": \"Mercedes-Benz\",\n  \"year\": 2025,\n  \"type\": \"ADVANCED_LIFE_SUPPORT\",\n  \"capacity\": 3,\n  \"status\": \"AVAILABLE\",\n  \"latitude\": 23.8103,\n  \"longitude\": 90.4125,\n  \"baseFare\": \"500\",\n  \"perKmFare\": \"40\"\n}" }
+          }
+        },
+        {
+          "name": "Update Ambulance",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/admin/ambulances/{{ambulanceId}}",
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"AVAILABLE\",\n  \"capacity\": 4\n}" }
+          }
+        },
+        { "name": "Delete Ambulance", "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/admin/ambulances/{{ambulanceId}}" } },
+        {
+          "name": "Create Hospital",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/admin/hospitals",
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Dhaka Medical College Hospital\",\n  \"address\": \"Dhaka, Bangladesh\",\n  \"phone\": \"0258616910\",\n  \"email\": \"hospital@example.com\",\n  \"latitude\": 23.7263,\n  \"longitude\": 90.3971,\n  \"status\": \"OPEN\"\n}" }
+          }
+        },
+        {
+          "name": "Update Hospital",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/admin/hospitals/{{hospitalId}}",
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"OPEN\",\n  \"phone\": \"0258616911\"\n}" }
+          }
+        },
+        {
+          "name": "Change Hospital Status",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/admin/hospitals/{{hospitalId}}/status",
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"OPEN\"\n}" }
+          }
+        },
+        { "name": "Delete Hospital", "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/admin/hospitals/{{hospitalId}}" } },
+        { "name": "Get All Hospitals", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/admin/hospitals" } },
+        { "name": "Get Hospital By ID", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/admin/hospitals/{{hospitalId}}" } },
+        {
+          "name": "Create Driver",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/admin/drivers",
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Emergency Driver\",\n  \"email\": \"driver@example.com\",\n  \"phone\": \"01712345678\",\n  \"licenseNumber\": \"DL-2025-1001\",\n  \"ambulanceId\": \"{{ambulanceId}}\"\n}" }
+          }
+        },
+        {
+          "name": "Update Driver",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/admin/drivers/{{driverId}}",
+            "body": { "mode": "raw", "raw": "{\n  \"phone\": \"01712345679\",\n  \"ambulanceId\": \"{{ambulanceId}}\"\n}" }
+          }
+        },
+        { "name": "Delete Driver", "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/admin/drivers/{{driverId}}" } }
+      ]
+    },
+    {
+      "name": "Hospitals",
+      "item": [
+        { "name": "Get All Hospitals", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/hospitals" } },
+        { "name": "Get Nearby Hospitals", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/hospitals/nearby" } },
+        { "name": "Get Hospital By ID", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/hospitals/{{hospitalId}}" } }
+      ]
+    },
+    {
+      "name": "Ambulances",
+      "item": [
+        { "name": "Get Available Ambulances", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/ambulances/available" } },
+        { "name": "Get All Ambulances", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/ambulances" } },
+        { "name": "Get Ambulance By ID", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/ambulances/{{ambulanceId}}" } },
+        {
+          "name": "Update Ambulance Status",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/ambulances/{{ambulanceId}}/status",
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"AVAILABLE\"\n}" }
+          }
+        },
+        {
+          "name": "Update Ambulance Location",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/ambulances/{{ambulanceId}}/location",
+            "body": { "mode": "raw", "raw": "{\n  \"latitude\": 23.8103,\n  \"longitude\": 90.4125\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Drivers",
+      "item": [
+        { "name": "Get All Drivers", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/drivers" } },
+        { "name": "Get Driver By ID", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/drivers/{{driverId}}" } },
+        {
+          "name": "Assign Ambulance",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/drivers/{{driverId}}/assign-ambulance",
+            "body": { "mode": "raw", "raw": "{\n  \"ambulanceId\": \"{{ambulanceId}}\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Emergencies",
+      "item": [
+        {
+          "name": "Create Emergency",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const json = pm.response.json();",
+                "if (json.data?.id) pm.collectionVariables.set(\"emergencyId\", json.data.id);"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/emergencies",
+            "body": { "mode": "raw", "raw": "{\n  \"patientName\": \"Test Patient\",\n  \"patientAge\": 35,\n  \"bloodGroup\": \"O_POSITIVE\",\n  \"description\": \"Road accident emergency\",\n  \"priority\": \"HIGH\",\n  \"pickupAddress\": \"Dhaka, Bangladesh\",\n  \"pickupLat\": 23.8103,\n  \"pickupLng\": 90.4125\n}" }
+          }
+        },
+        { "name": "Get My Emergencies", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/emergencies/my" } },
+        { "name": "Get All Emergencies", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/emergencies/all" } },
+        { "name": "Get Emergency By ID", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/emergencies/{{emergencyId}}" } },
+        {
+          "name": "Update Emergency",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/emergencies/{{emergencyId}}",
+            "body": { "mode": "raw", "raw": "{\n  \"description\": \"Updated emergency description\",\n  \"priority\": \"CRITICAL\"\n}" }
+          }
+        },
+        {
+          "name": "Cancel Emergency",
+          "request": { "method": "PATCH", "header": [], "url": "{{baseUrl}}/emergencies/{{emergencyId}}/cancel" }
+        },
+        {
+          "name": "Verify Emergency",
+          "request": { "method": "PATCH", "header": [], "url": "{{baseUrl}}/emergencies/{{emergencyId}}/verify" }
+        },
+        {
+          "name": "Assign Hospital",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/emergencies/{{emergencyId}}/hospital",
+            "body": { "mode": "raw", "raw": "{\n  \"hospitalId\": \"{{hospitalId}}\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dispatches",
+      "item": [
+        {
+          "name": "Create Dispatch",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const json = pm.response.json();",
+                "if (json.data?.id) pm.collectionVariables.set(\"dispatchId\", json.data.id);"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/dispatches",
+            "body": { "mode": "raw", "raw": "{\n  \"emergencyId\": \"{{emergencyId}}\",\n  \"ambulanceId\": \"{{ambulanceId}}\"\n}" }
+          }
+        },
+        { "name": "Get All Dispatches", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/dispatches" } },
+        { "name": "Get Dispatch By ID", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/dispatches/{{dispatchId}}" } },
+        {
+          "name": "Update Dispatch Status",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/dispatches/{{dispatchId}}/status",
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"EN_ROUTE\"\n}" }
+          }
+        },
+        {
+          "name": "Cancel Dispatch",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/dispatches/{{dispatchId}}/cancel",
+            "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Ambulance unavailable\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboards",
+      "item": [
+        { "name": "Admin Analytics", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/dashboard/admin" } },
+        { "name": "Dispatcher Analytics", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/dashboard/dispatcher" } },
+        { "name": "Requester Analytics", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/dashboard/requester" } }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Create Payment",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/payments/create",
+            "body": { "mode": "raw", "raw": "{\n  \"emergencyId\": \"{{emergencyId}}\",\n  \"amount\": 1500,\n  \"currency\": \"BDT\",\n  \"gateway\": \"BKASH\"\n}" }
+          }
+        },
+        { "name": "Get My Payments", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/payments" } },
+        { "name": "Get Payment By ID", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/payments/{{paymentId}}" } },
+        {
+          "name": "Update Payment Status (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/payments/{{paymentId}}/status",
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"PAID\",\n  \"gatewayTransactionId\": \"TXN-20251119-001\",\n  \"gatewayValidationId\": \"VALID-20251119-001\"\n}" }
+          }
+        }
+      ]
+    }
+  ]
+}

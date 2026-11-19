@@ -31,6 +31,54 @@ async function main() {
   });
 
   console.log("Admin user seeded:", admin);
+
+  //! dispatcher seeding
+  const dispatcherEmail = process.env.DISPATCHER_EMAIL!;
+  const dispatcherPassword = process.env.DISPATCHER_PASSWORD!;
+  const dispatcherName = process.env.DISPATCHER_NAME!;
+  const dispatcherPhone = process.env.DISPATCHER_PHONE!;
+
+  const hashedDispatcherPassword = await argon2.hash(dispatcherPassword);
+
+  const dispatcher = await prisma.user.upsert({
+    where: { email: dispatcherEmail },
+    update: {},
+    create: {
+      name: dispatcherName,
+      email: dispatcherEmail,
+      password: hashedDispatcherPassword,
+      phone: dispatcherPhone,
+      role: "DISPATCHER",
+      status: "ACTIVE",
+      emailVerified: true,
+    },
+  });
+
+  console.log("Dispatcher user seeded:", dispatcher);
+
+  //! requester seeding
+  const requesterEmail = process.env.REQUESTER_EMAIL!;
+  const requesterPassword = process.env.REQUESTER_PASSWORD!;
+  const requesterName = process.env.REQUESTER_NAME!;
+  const requesterPhone = process.env.REQUESTER_PHONE!;
+
+  const hashedRequesterPassword = await argon2.hash(requesterPassword);
+
+  const requester = await prisma.user.upsert({
+    where: { email: requesterEmail },
+    update: {},
+    create: {
+      name: requesterName,
+      email: requesterEmail,
+      password: hashedRequesterPassword,
+      phone: requesterPhone,
+      role: "REQUESTER",
+      status: "ACTIVE",
+      emailVerified: true,
+    },
+  });
+
+  console.log("Requester user seeded:", requester);
 }
 main()
   .then(async () => {

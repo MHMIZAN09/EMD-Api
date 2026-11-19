@@ -8,6 +8,7 @@ import { driverRoutes } from "../module/driver/driver.routes";
 import { emergencyRoutes } from "../module/emergencies/emergency.routes";
 import { dispatchRoutes } from "../module/dispatches/dispatch.routes";
 import { dashboardRoutes } from "../module/dashboard/dashboard.routes";
+import { paymentRoutes } from "../module/payments/payment.route";
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use("/drivers", driverRoutes);
 router.use("/emergencies", emergencyRoutes);
 router.use("/dispatches", dispatchRoutes);
 router.use("/dashboard", dashboardRoutes);
+router.use("/payments", paymentRoutes);
 
 export const appRoutes = router;
