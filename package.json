@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js",
+    "dev": "tsx watch ./src/server.ts",
+    "build": "tsup",
     "format:check": "npx @biomejs/biome format ./src",
     "format:fix": "npx @biomejs/biome format --write ./src",
     "lint:check": "npx @biomejs/biome lint ./src",
@@ -35,6 +37,7 @@
     "nodemailer": "^10.6.0",
     "pg": "^8.23.1",
     "redis": "^6.3.1",
+    "tsup": "^9.0.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {

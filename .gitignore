@@ -163,3 +163,4 @@ vite.config.ts.timestamp-*
 .claude
 .windsurf
 skills-lock.json
+.vercel
