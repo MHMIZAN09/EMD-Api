@@ -26,6 +26,7 @@ async function main() {
       phone: adminPhone,
       role: "ADMIN",
       status: "ACTIVE",
+      emailVerified: true,
     },
   });
 

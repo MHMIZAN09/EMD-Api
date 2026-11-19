@@ -6,8 +6,20 @@ import { validateRequest } from "../../middleware/validateRequest";
 import { ambulanceValidation } from "../ambulance/ambulance.validation";
 import { hospitalValidation } from "../hospital/hospital.validation";
 import { driverValidation } from "../driver/driver.validation";
+import z from "zod";
+import { adminValidation } from "./admin.validation";
 
 const router = Router();
+
+const createDispatcherSchema = z.object({
+  name: z
+    .string("Name is required")
+    .min(3, "Name must have at least 3 characters"),
+  email: z.email("A valid email is required"),
+  phone: z
+    .string("Phone number is required")
+    .regex(/^01[3-9]\d{8}$/, "Invalid Bangladeshi phone number"),
+});
 
 router.get("/dashboard", (req, res) => {
   res.send("Admin Dashboard");
@@ -31,6 +43,13 @@ router.patch(
 );
 
 router.delete("/users/:id", auth(Role.ADMIN), adminController.deleteUser);
+
+router.post(
+  "/dispatchers",
+  auth(Role.ADMIN),
+  validateRequest(adminValidation.createDispatcherSchema),
+  adminController.createDispatcher,
+);
 
 //! ambulance management
 router.post(
