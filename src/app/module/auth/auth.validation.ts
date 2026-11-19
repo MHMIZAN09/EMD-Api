@@ -50,10 +50,30 @@ const resetPasswordSchema = z.object({
   otp: z.string("OTP is required").length(6, "OTP must be 6 digits"),
 });
 
+const changePasswordSchema = z
+  .object({
+    oldPassword: z.string("Old password is required"),
+    newPassword: z
+      .string("New password is required")
+      .min(8, "New password must be at least 8 characters")
+      .regex(/[A-Z]/, "New password must contain at least one uppercase letter")
+      .regex(/[a-z]/, "New password must contain at least one lowercase letter")
+      .regex(/[0-9]/, "New password must contain at least one number")
+      .regex(
+        /[!@#$%^&*(),.?":{}|<>]/,
+        "New password must contain at least one special character",
+      ),
+    confirmNewPassword: z.string("Confirm new password is required"),
+  })
+  .refine((data) => data.newPassword === data.confirmNewPassword, {
+    message: "New password and confirm new password must match",
+  });
+
 export const authValidation = {
   registerSchema,
   loginSchema,
   verifyEmailSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  changePasswordSchema,
 };

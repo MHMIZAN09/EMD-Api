@@ -179,6 +179,20 @@ const resetPassword = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const changePassword = catchAsync(async (req: Request, res: Response) => {
+  const payload = req.body;
+  const user = req.user as unknown as IRequestUser;
+
+  await authService.changePassword(user, payload);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Password changed successfully",
+    data: null,
+  });
+});
+
 export const authController = {
   RegisterUser,
   LoginUser,
@@ -188,4 +202,5 @@ export const authController = {
   verifyUserEmail,
   forgotPassword,
   resetPassword,
+  changePassword,
 };

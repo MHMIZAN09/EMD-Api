@@ -1,6 +1,7 @@
 import { prisma } from "../../lib/prisma";
 import { AppError } from "../../utils/AppError";
 import type {
+	IChangePasswordPayload,
 	IForgotPasswordPayload,
 	IRequestUser,
 	IResetPasswordPayload,
@@ -567,6 +568,82 @@ export const ensureUserExists = async (email: string) => {
 	}
 };
 
+// ! change password
+const changePassword = async (
+	user: IRequestUser,
+	payload: IChangePasswordPayload,
+) => {
+	const { oldPassword, newPassword, confirmNewPassword } = payload;
+
+	if (newPassword !== confirmNewPassword) {
+		throw new AppError(
+			httpStatus.BAD_REQUEST,
+			"New password and confirm new password do not match",
+		);
+	}
+
+	const existingUser = await prisma.user.findUnique({
+		where: { id: user.userId },
+	});
+
+	if (!existingUser) {
+		throw new AppError(httpStatus.NOT_FOUND, "User not found");
+	}
+
+	const isOldPasswordValid = await argon2.verify(
+		existingUser.password,
+		oldPassword,
+	);
+
+	if (!isOldPasswordValid) {
+		throw new AppError(httpStatus.UNAUTHORIZED, "Old password is incorrect");
+	}
+
+	const isSamePassword = await argon2.verify(
+		existingUser.password,
+		newPassword,
+	);
+
+	if (isSamePassword) {
+		throw new AppError(
+			httpStatus.BAD_REQUEST,
+			"New password must be different from the old password",
+		);
+	}
+
+	const hashedNewPassword = await argon2.hash(newPassword);
+
+	await prisma.user.update({
+		where: { id: user.userId },
+		data: {
+			password: hashedNewPassword,
+			mustChangePassword: false,
+		},
+	});
+
+	try {
+		const templatePath = path.join(
+			process.cwd(),
+			"src/templates/change-password-success.ejs",
+		);
+
+		const html = await ejs.renderFile(templatePath, {
+			name: existingUser.name,
+		});
+
+		await transporter.sendMail({
+			from: config.email_sender,
+			to: existingUser.email,
+			subject: "Your Password Was Changed",
+			html,
+		});
+	} catch (error) {
+		// Password is already changed.
+		// Email failure must not undo the password change.
+		console.error("Password change notification email failed:", error);
+	}
+};
+
 export const authService = {
 	registerUser,
 	loginUser,
@@ -575,4 +652,5 @@ export const authService = {
 	verifyUserEmail,
 	forgotPassword,
 	resetPassword,
+	changePassword,
 };

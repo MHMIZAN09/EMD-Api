@@ -55,4 +55,11 @@ router.post(
   authController.resetPassword,
 );
 
+//* Change Password
+router.post(
+  "/change-password",
+  auth(Role.ADMIN, Role.DISPATCHER, Role.REQUESTER),
+  validateRequest(authValidation.changePasswordSchema),
+  authController.changePassword,
+);
 export const authRoutes = router;
